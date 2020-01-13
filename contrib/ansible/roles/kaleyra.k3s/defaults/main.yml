@@ -1,0 +1,8 @@
+---
+# defaults file for kaleyra.k3s
+k3s_version: v0.9.1
+ansible_user: debian
+systemd_dir: /etc/systemd/system
+
+master_group: k3s_master
+node_group: k3s_node

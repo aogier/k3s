@@ -1,0 +1,76 @@
+---
+# tasks file for kaleyra.k3s
+
+#- name: saluta
+#  run_once: true
+#  fail:
+#    msg: |
+#      vars: {{ vars | to_nice_yaml }}
+
+- name: saluta
+  debug:
+    msg: |
+      group_names: {{ group_names }}
+      hostvars: {{ groups[master_group][0] }}
+
+- name: include prereq tasks
+  include_tasks:
+    file: prereq.yml
+
+
+- name: include raspbian tasks
+  include_tasks:
+    file: raspbian.yml
+
+- name: configure master
+  when: master_group in group_names
+  block:
+
+  - name: include download tasks - master
+    include_tasks:
+      file: download.yml
+
+  - name: master K3s service file
+    become: yes
+    notify:
+      - k3s restart
+      - k3s master restart
+    template:
+      src: "k3s.service.j2"
+      dest: "{{ systemd_dir }}/k3s.service"
+      owner: root
+      group: root
+      mode: 0755
+
+- name: flush handlers
+  meta: flush_handlers
+
+- name: Read node-token from master
+  when: master_group in group_names
+  become: true
+  slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: node_token
+
+- name: Store Master node-token
+  when: master_group in group_names
+  set_fact:
+   token: "{{ node_token.content | b64decode | regex_replace('\n', '') }}"
+
+- name: configure nodes
+  when: node_group in group_names
+  block:
+
+    - name: include download tasks - nodes
+      include_tasks:
+        file: download.yml
+
+    - name: node K3s service file
+      become: yes
+      notify: k3s restart
+      template:
+        src: "k3s.service.j2"
+        dest: "{{ systemd_dir }}/k3s.service"
+        owner: root
+        group: root
+        mode: 0755

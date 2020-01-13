@@ -1,0 +1,41 @@
+---
+
+- name: become block
+  become: yes
+  block:
+
+    - name: redhat/centos distros
+      when: ansible_distribution in ['CentOS', 'Red Hat Enterprise Linux']
+      block:
+
+        - name: Set SELinux to disabled state
+          selinux:
+            state: disabled
+
+        - name: Set bridge-nf-call-iptables (just to be sure)
+          sysctl:
+            name: net.bridge.bridge-nf-call-iptables
+            value: "1"
+            state: present
+            reload: yes
+
+        - name: Set bridge-nf-call-ip6tables (just to be sure)
+          sysctl:
+            name: net.bridge.bridge-nf-call-iptables
+            value: "1"
+            state: present
+            reload: yes
+
+    - name: Enable IPv4 forwarding
+      sysctl:
+        name: net.ipv4.ip_forward
+        value: "1"
+        state: present
+        reload: yes
+
+    - name: Enable IPv6 forwarding
+      sysctl:
+        name: net.ipv6.conf.all.forwarding
+        value: "1"
+        state: present
+        reload: yes

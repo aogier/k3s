@@ -1,0 +1,63 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: vagrant
+  provider:
+    name: virtualbox
+lint:
+  name: yamllint
+platforms:
+  # TODO: implement multimaster
+  - name: master-1
+    box: debian/buster64
+    interfaces:
+      - auto_config: true
+        network_name: private_network
+        type: static
+        ip: 192.168.0.1
+        virtualbox__intnet: cluster
+  - name: worker-1
+    box: debian/buster64
+    interfaces:
+      - auto_config: true
+        network_name: private_network
+        type: static
+        ip: 192.168.0.10
+        virtualbox__intnet: cluster
+  - name: worker-2
+    box: debian/buster64
+    interfaces:
+      - auto_config: true
+        network_name: private_network
+        type: static
+        ip: 192.168.0.20
+        virtualbox__intnet: cluster
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      stdout_callback: yaml
+  inventory:
+    hosts:
+      all:
+        children:
+          k3s_master:
+            hosts:
+              master-1:
+                molecule_vagrant: true
+          k3s_node:
+            hosts:
+              worker-1:
+              worker-2:
+  lint:
+    name: ansible-lint
+verifier:
+  name: testinfra
+  env:
+    OS_NAME: debian
+    OS_VERSION: 10
+  options:
+    s: true
+  lint:
+    name: flake8

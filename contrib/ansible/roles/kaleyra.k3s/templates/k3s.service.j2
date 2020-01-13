@@ -1,0 +1,27 @@
+[Unit]
+Description=Lightweight Kubernetes
+Documentation=https://k3s.io
+After=network-online.target
+[Service]
+ExecStartPre=-/sbin/modprobe br_netfilter
+ExecStartPre=-/sbin/modprobe overlay
+{% if master_group in group_names %}
+{% if molecule_vagrant | default(False) %}
+ExecStart=/usr/local/bin/k3s server -i {{ ansible_eth1.ipv4.address }}
+{% else %}
+ExecStart=/usr/local/bin/k3s server
+{% endif %}
+{% elif node_group in group_names %}
+ExecStart=/usr/local/bin/k3s agent --server https://{{ groups[master_group][0] }}:6443 --token {{ hostvars[groups[master_group][0]]['token'] }}
+{% endif %}
+KillMode=process
+Delegate=yes
+LimitNOFILE=infinity
+LimitNPROC=infinity
+LimitCORE=infinity
+TasksMax=infinity
+Restart=always
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

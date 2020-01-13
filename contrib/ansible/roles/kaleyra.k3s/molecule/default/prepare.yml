@@ -1,0 +1,27 @@
+---
+- name: Prepare
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Install python for Ansible
+      raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
+      become: true
+      changed_when: false
+
+- name: networking
+  hosts: all
+  tasks:
+    - name: asd
+      become: true
+      loop: "{{ hostvars | dict2items(key_name='host', value_name='vars')}}"
+      loop_control:
+        label: '{{ item.host }}'
+      when: item.host != ansible_fqdn
+      lineinfile:
+        regexp: >
+          ^{{ item.vars.ansible_eth1.ipv4.address }}
+          {{ item.host }}
+        path: /etc/hosts
+        line: >
+          {{ item.vars.ansible_eth1.ipv4.address }}
+          {{ item.host }}
